@@ -73,13 +73,14 @@ object BirdWatch extends Controller {
       val md = MessageDigest.getInstance("SHA-256")
       val queryID = md.digest(q.getBytes).map("%02x".format(_)).mkString
 
+      //a enumerator produce content through several enumeratees
       WS.url(PercolationQueryURL + queryID).put(query).map {
         res => Ok.feed(TwitterClient.jsonTweetsOut
-          &> matchesFilter(queryID)
-          &> Concurrent.buffer(1000)
-          &> matchesToJson
-          &> connDeathWatch(req, new DateTime(DateTimeZone.UTC))
-          &> EventSource()).as("text/event-stream")
+          through matchesFilter(queryID)
+          through Concurrent.buffer(1000)
+          through matchesToJson
+          through connDeathWatch(req, new DateTime(DateTimeZone.UTC))
+          through EventSource()).as("text/event-stream")
       }
   }
 
